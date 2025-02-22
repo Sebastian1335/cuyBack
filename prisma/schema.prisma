@@ -1,0 +1,100 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_URL")
+}
+
+//! Aqui se agregan los modelos para crear la base de datos
+
+model administrador {
+  id       Int    @id @default(autoincrement())
+  nombre   String @default("ADMIN")
+  email    String @default("cuni@empresa.com")
+  password String
+}
+
+model user {
+  id                Int         @id @default(autoincrement())
+  nombre            String
+  email             String      @unique
+  validatedEmail    Boolean     @default(false)
+  password          String
+  premium           Boolean     @default(false)
+  nivel             Int         @default(1)
+  exp               Int         @default(0)
+  racha             Int         @default(0)
+  monedas           Int         @default(0)
+  fechaCreacion     DateTime    @default(now())
+  fechaUltimaAccion DateTime    @default(now())
+  resultados        resultado[] @relation("UserResultados")
+  seguidores        follow[]    @relation("UserSeguidos")
+  seguidos          follow[]    @relation("UserSiguiendo")
+  items             item[]      @relation("UsuarioItems")
+}
+
+model item {
+  id       Int    @id @default(autoincrement())
+  nombre   String
+  precio   Int
+  usuarios user[] @relation("UsuarioItems")
+}
+
+model follow {
+  id          Int  @id @default(autoincrement())
+  id_seguidor Int
+  id_seguido  Int
+  seguidor    user @relation("UserSeguidos", fields: [id_seguidor], references: [id])
+  seguido     user @relation("UserSiguiendo", fields: [id_seguido], references: [id])
+
+  @@unique([id_seguidor, id_seguido])
+  @@unique([id_seguido, id_seguidor])
+}
+
+model resultado {
+  id                  Int       @id @default(autoincrement())
+  tiempo              Int
+  calificacion        Int
+  cantidadCorrectas   Int
+  cantidadIncorrectas Int
+  user                user      @relation("UserResultados", fields: [id_usuario], references: [id])
+  id_usuario          Int
+  categoria           categoria @relation("CategoriaResultados", fields: [id_categoria], references: [id])
+  id_categoria        Int
+  fechaCreacion       DateTime  @default(now())
+  // @@unique([id_usuario, id_categoria]) //? Asegura que no haya duplicados en la relación, 
+}
+
+model categoria {
+  id         Int         @id @default(autoincrement())
+  nombre     String      @unique
+  duracion   Int
+  resultados resultado[] @relation("CategoriaResultados")
+  pregunta   pregunta[]  @relation("CategoriaPregunta")
+}
+
+model pregunta {
+  id           Int         @id @default(autoincrement())
+  enunciado    String
+  imagen_url   String?
+  solucion_url String?
+  id_categoria Int
+  categoria    categoria   @relation("CategoriaPregunta", fields: [id_categoria], references: [id])
+  respuesta    respuesta[] @relation("PreguntaRespuesta")
+}
+
+model respuesta {
+  id          Int      @id @default(autoincrement())
+  esCorrecto  Boolean
+  contenido   String
+  id_pregunta Int
+  pregunta    pregunta @relation("PreguntaRespuesta", fields: [id_pregunta], references: [id])
+}
