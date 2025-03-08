@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import { PreguntasController } from './controller';
 import { DIContainerRepository } from '../../infrastructure/DI/repositoryContainer';
+import { uploadFileMiddleware } from '../middleware/uploadFile';
+import { AdminMiddleware } from '../middleware/adminMiddleware';
+import { AuthMiddleware } from '../middleware/auth';
 
 
 
@@ -9,7 +12,10 @@ export class PreguntaRoutes {
 
 
   static get routes(): Router {
-
+  const authMiddle = [
+                AdminMiddleware.validarAdmin,
+                AuthMiddleware.validarToken,
+            ];
     const router = Router();
     
     const repository = DIContainerRepository.getPreguntaRepository() 
@@ -17,11 +23,11 @@ export class PreguntaRoutes {
     
     // Definir las rutas
     // router.use('/api/algo', /*TodoRoutes.routes */ );
-    router.post("/", (req,res) => controller.crearPregunta(req,res))
-    router.get("/:id", (req,res) => controller.obtenerPregunta(req,res))
-    router.get("/respuestas/:id", (req,res) => controller.getRespuestasByIdPregunta(req,res))
-    router.put("/:id", (req, res) => controller.editarPregunta(req,res))
-    router.delete("/:id", (req,res) => controller.eliminarPregunta(req,res))
+    router.post("/",  [...authMiddle,uploadFileMiddleware.subirImagen], controller.crearPregunta)
+    router.get("/:id", controller.obtenerPregunta)
+    router.get("/respuestas/:id", controller.getRespuestasByIdPregunta)
+    router.put("/:id", authMiddle, controller.editarPregunta)
+    router.delete("/:id", authMiddle, controller.eliminarPregunta)
 
     return router;
   }
